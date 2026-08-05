@@ -1,0 +1,55 @@
+name: KineTwin Personalized Benchmark
+
+on:
+  push:
+    branches:
+      - experiment/kinetwin-public-benchmark
+    paths:
+      - 'experiments/run_personalized_kinetwin.py'
+      - '.github/workflows/kinetwin-personalized-benchmark.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  personalized-evaluation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+          cache-dependency-path: experiments/requirements-benchmark.txt
+
+      - name: Install dependencies
+        run: pip install -r experiments/requirements-benchmark.txt
+
+      - name: Run strict and personalized LOSO protocols
+        run: |
+          python experiments/run_personalized_kinetwin.py \
+            --output personalized_output \
+            --seq-len 64 \
+            --seed 20260805
+
+      - name: Package reproducible outputs
+        run: |
+          cp experiments/run_personalized_kinetwin.py personalized_output/
+          cp experiments/requirements-benchmark.txt personalized_output/
+          cd personalized_output
+          zip -r ../KineTwin_Personalized_Benchmark.zip .
+
+      - name: Upload results
+        uses: actions/upload-artifact@v4
+        with:
+          name: KineTwin-Personalized-Benchmark
+          path: |
+            personalized_output/**
+            KineTwin_Personalized_Benchmark.zip
+          if-no-files-found: error
+          retention-days: 30
