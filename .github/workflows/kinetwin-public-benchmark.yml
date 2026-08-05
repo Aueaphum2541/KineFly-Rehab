@@ -30,6 +30,9 @@ jobs:
       - name: Install dependencies
         run: pip install -r experiments/requirements-benchmark.txt
 
+      - name: Apply physics-neural hybrid fusion
+        run: python experiments/apply_hybrid_patch.py
+
       - name: Train on public UCI dataset
         run: |
           python experiments/train_kinetwin_public.py \
