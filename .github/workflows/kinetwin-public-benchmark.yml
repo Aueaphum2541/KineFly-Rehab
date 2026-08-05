@@ -1,0 +1,61 @@
+name: KineTwin Public Benchmark
+
+on:
+  push:
+    branches:
+      - experiment/kinetwin-public-benchmark
+    paths:
+      - 'experiments/**'
+      - '.github/workflows/kinetwin-public-benchmark.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  train-and-render:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+          cache-dependency-path: experiments/requirements-benchmark.txt
+
+      - name: Install dependencies
+        run: pip install -r experiments/requirements-benchmark.txt
+
+      - name: Train on public UCI dataset
+        run: |
+          python experiments/train_kinetwin_public.py \
+            --output benchmark_output \
+            --epochs 30 \
+            --seq-len 48 \
+            --batch 64 \
+            --seed 20260805
+
+      - name: Render publication figures and LaTeX
+        run: python experiments/render_kinetwin_results.py
+
+      - name: Package results
+        run: |
+          cp experiments/train_kinetwin_public.py benchmark_output/
+          cp experiments/render_kinetwin_results.py benchmark_output/
+          cp experiments/requirements-benchmark.txt benchmark_output/
+          cd benchmark_output
+          zip -r ../KineTwin_Public_Benchmark_Results.zip .
+
+      - name: Upload benchmark artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: KineTwin-Public-Benchmark-Results
+          path: |
+            benchmark_output/**
+            KineTwin_Public_Benchmark_Results.zip
+          if-no-files-found: error
+          retention-days: 30
