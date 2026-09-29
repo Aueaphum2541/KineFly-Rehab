@@ -1,0 +1,57 @@
+name: KineTwin Extended Experiments
+
+on:
+  push:
+    branches:
+      - experiment/kinetwin-public-benchmark
+    paths:
+      - 'experiments/run_extended_kinetwin.py'
+      - '.github/workflows/kinetwin-extended.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  extended-evaluation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+          cache-dependency-path: experiments/requirements-benchmark.txt
+
+      - name: Install dependencies
+        run: pip install -r experiments/requirements-benchmark.txt
+
+      - name: Run extended experiments
+        run: |
+          python experiments/run_extended_kinetwin.py \
+            --output extended_output \
+            --seq-len 48 \
+            --epochs 24 \
+            --batch 64 \
+            --seed 20260929
+
+      - name: Package outputs
+        run: |
+          cp experiments/run_extended_kinetwin.py extended_output/
+          cp experiments/requirements-benchmark.txt extended_output/
+          cd extended_output
+          zip -r ../KineTwin_Extended_Results.zip .
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: KineTwin-Extended-Results
+          path: |
+            extended_output/**
+            KineTwin_Extended_Results.zip
+          if-no-files-found: error
+          retention-days: 30
